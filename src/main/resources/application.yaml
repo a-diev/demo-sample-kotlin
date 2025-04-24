@@ -1,0 +1,9 @@
+spring:
+  application:
+    name: demo-sample-kotlin
+
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE}
+
+server:
+  port: 8789
