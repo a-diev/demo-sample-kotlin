@@ -1,9 +1,19 @@
 services:
   postgres:
     image: postgres
+    restart: always
+    container_name: postgres
     environment:
       - POSTGRES_USER=${DATABASE_USER}
       - POSTGRES_PASSWORD=${DATABASE_PASSWORD}
       - POSTGRES_DB=${DATABASE_NAME}
     ports:
       - '5432:5432'
+  adminer:
+    image: adminer
+    restart: always
+    container_name: adminer
+    environment:
+      - ADMINER_DEFAULT_SERVER=${ADMINER_SERVER_NAME}
+    ports:
+      - '8080:8080'
