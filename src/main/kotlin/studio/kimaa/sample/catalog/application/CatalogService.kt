@@ -1,5 +1,7 @@
 package studio.kimaa.sample.catalog.application
 
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import studio.kimaa.sample.catalog.domain.CatalogEntity
@@ -8,20 +10,15 @@ import java.util.UUID
 
 @Service
 class CatalogService(private val repository: CatalogRepository) {
-    fun index(name: String?, status: Boolean?, startDate: Instant?, endDate: Instant?, pageable: Pageable): CatalogPagedResponse<CatalogEntity> {
-        val specifications = CatalogSpecificationBuilder<CatalogEntity>()
+    fun index(page: Int = 0, perPage: Int = 10, name: String? = null, status: Boolean? = null, startDate: Instant? = null, endDate: Instant? = null): Page<CatalogEntity> {
+        val pageable: Pageable = PageRequest.of(page, perPage)
+        val spec = CatalogSpecificationBuilder<CatalogEntity>()
             .like("name", name)
             .equal("status", status)
             .betweenDates("createdAt", startDate, endDate)
             .build()
-        val pageResult = repository.findAll(specifications, pageable)
-        return CatalogPagedResponse(
-            data = pageResult.content,
-            page = pageResult.number,
-            size = pageResult.size,
-            totalElements = pageResult.totalElements,
-            totalPages = pageResult.totalPages
-        )
+
+        return repository.findAll(spec, pageable)
     }
 
     fun store(request: CatalogDTORequest): String {

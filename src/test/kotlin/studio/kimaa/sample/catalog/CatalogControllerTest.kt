@@ -9,7 +9,6 @@ import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Pageable
-import org.springframework.data.domain.Sort
 import org.springframework.http.MediaType
 import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.servlet.MockMvc
@@ -17,6 +16,7 @@ import org.springframework.test.web.servlet.delete
 import org.springframework.test.web.servlet.get
 import org.springframework.test.web.servlet.post
 import org.springframework.test.web.servlet.put
+import org.springframework.util.LinkedMultiValueMap
 import studio.kimaa.sample.catalog.application.CatalogDTORequest
 import studio.kimaa.sample.catalog.application.CatalogPagedResponse
 import studio.kimaa.sample.catalog.application.CatalogService
@@ -39,29 +39,39 @@ class CatalogControllerTest {
 
     @Test
     fun `should return list of catalogs`() {
-        val listCatalogs = listOf(
-            CatalogEntity(UUID.randomUUID(), "Gadget", "Katalok untuk semua produk gadget"),
-            CatalogEntity(UUID.randomUUID(), "Laptop", "Katalok untuk semua produk laptop"),
-        )
-        val pageable: Pageable = PageRequest.of(0, 5, Sort.by("createdAt").ascending())
-        val pageResult: Page<CatalogEntity> = PageImpl(listCatalogs)
-        val result = CatalogPagedResponse(
-            data = pageResult.content,
-            page = pageResult.number,
-            size = pageResult.size,
-            totalElements = pageResult.totalElements,
-            totalPages = pageResult.totalPages
-        )
+        val pageable: Pageable = PageRequest.of(0, 10) // Page 0, size 10
 
-        whenever(service.index(name = "Gadget", status = true, startDate = Instant.now(), endDate = Instant.now(), pageable = pageable)).thenReturn(result)
+        val initItems = listOf(
+            CatalogEntity(
+                UUID.fromString("87386e6d-cea9-4c42-9d89-d6d216d0b857"),
+                "Pakaian Pria",
+                "Kumpulan pakaian pria.",
+                false,
+                Instant.parse("2025-05-14T02:56:29.203555Z")
+            )
+        )
+        val initPage: Page<CatalogEntity> = PageImpl(initItems, pageable, initItems.size.toLong())
+
+        whenever(service.index(
+            // page = 0,
+            // perPage = 10,
+            // name = "Pakaian Pria",
+            // status = false,
+            // startDate = Instant.parse("2025-05-14T02:56:29.203555Z"),
+            // endDate = Instant.parse("2025-05-16T02:56:29.203555Z"),
+        )).thenReturn(initPage)
 
         mockMvc.get("/catalogs") {
             contentType = MediaType.APPLICATION_JSON
+            params = LinkedMultiValueMap<String, String>().apply {
+                add("page", "0")
+                add("perPage", "10")
+            }
         }.andExpect {
             status { isOk() }
             jsonPath("$.success") { value(true) }
             jsonPath("$.message") { value("success") }
-            jsonPath("$.data.size") { value(result.size) }
+            jsonPath("$.data.numberOfElements") { value(initPage.numberOfElements) }
         }
     }
 

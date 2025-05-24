@@ -2,61 +2,60 @@ package studio.kimaa.sample.catalog
 
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
+import org.mockito.InjectMocks
+import org.mockito.Mock
+import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doNothing
 import org.mockito.kotlin.whenever
-import org.mockito.kotlin.mock
-import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Pageable
-import org.springframework.data.domain.Sort
+import org.springframework.data.jpa.domain.Specification
 import studio.kimaa.sample.catalog.application.CatalogDTORequest
 import studio.kimaa.sample.catalog.application.CatalogRepository
 import studio.kimaa.sample.catalog.application.CatalogService
-import studio.kimaa.sample.catalog.application.CatalogSpecificationBuilder
 import studio.kimaa.sample.catalog.domain.CatalogEntity
 import java.time.Instant
 import java.util.Optional
 import java.util.UUID
 
+@ExtendWith(MockitoExtension::class)
 class CatalogServiceTest {
 
-    private val repository: CatalogRepository = mock()
-    private val service: CatalogService = CatalogService(repository)
+    @Mock
+    private lateinit var repository: CatalogRepository
+    @InjectMocks
+    private lateinit var service: CatalogService
 
     @Test
     fun `should return list of catalogs`() {
-        // Arrange
-        val listCatalogs: List<CatalogEntity> = listOf(
-            CatalogEntity(UUID.randomUUID(), "Gadget", "Katalok untuk semua produk gadget", true, Instant.now()),
-            CatalogEntity(UUID.randomUUID(), "Laptop", "Katalok untuk semua produk Laptop", true, Instant.now()),
-            CatalogEntity(UUID.randomUUID(), "Standing Desk", "Katalog untuk semua produk standing desk", true, Instant.now()),
+        val pageable = PageRequest.of(0, 10) // Page 0, size 10
+
+        val initItems = listOf(
+            CatalogEntity(
+                UUID.fromString("87386e6d-cea9-4c42-9d89-d6d216d0b857"),
+                "Pakaian Pria",
+                "Kumpulan pakaian pria.",
+                false,
+                Instant.parse("2025-05-14T02:56:29.203555Z")
+            )
         )
-        val page: Page<CatalogEntity> = PageImpl(listCatalogs)
-        val nowDate: Instant = Instant.now()
-        val startDate: Instant = nowDate.minusSeconds(7 * 24 * 60 * 60)
-        val endDate: Instant = nowDate
-        val specifications = CatalogSpecificationBuilder<CatalogEntity>()
-            .like("name", "Gadget")
-            .equal("status", true)
-            .betweenDates("createdAt", startDate, endDate)
-            .build()
-        val pageable: Pageable = PageRequest.of(0, 5)
+        val initPage = PageImpl(initItems, pageable, initItems.size.toLong())
 
-        whenever(repository.findAll(specifications, pageable)).thenReturn(page)
+        whenever(repository.findAll(any<Specification<CatalogEntity>>(), any<Pageable>())).thenReturn(initPage)
 
-        // Act
         val result = service.index(
-            name = "Gadget",
-            status = true,
-            startDate = startDate,
-            endDate = endDate,
-            pageable = pageable
+            page = 0,
+            perPage = 10,
+            name = "Pakaian Pria",
+            status = false,
+            startDate = Instant.parse("2025-05-14T02:56:29.203555Z"),
+            endDate = Instant.parse("2025-05-17T02:56:29.203555Z"),
         )
 
-        // Assert
-        assertEquals(3, result.size)
+        assertEquals(1, result.content.size)
     }
 
     @Test

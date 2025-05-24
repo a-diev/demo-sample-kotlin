@@ -1,7 +1,6 @@
 package studio.kimaa.sample.catalog.web
 
 import jakarta.validation.Valid
-import org.springframework.data.domain.Pageable
 import org.springframework.format.annotation.DateTimeFormat
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
@@ -26,17 +25,26 @@ import java.time.Instant
 @RequestMapping("/catalogs")
 class CatalogController(private val service: CatalogService) {
 
-    @GetMapping(consumes = [MediaType.APPLICATION_JSON_VALUE])
+    @GetMapping
     fun index(
+        @RequestParam(name = "page", required = false, defaultValue = "0") page: Int,
+        @RequestParam(name = "perPage", required = false, defaultValue = "10") perPage: Int,
         @RequestParam(name = "name", required = false) name: String?,
         @RequestParam(name = "status", required = false) status: Boolean?,
         @RequestParam(name = "startDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) startDate: Instant?,
         @RequestParam(name = "endDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) endDate: Instant?,
-        pageable: Pageable
     ): ResponseEntity<CatalogDTOResponse<CatalogPagedResponse<CatalogEntity>>> {
-        val result = service.index(name, status, startDate, endDate, pageable)
+        val result = service.index(page, perPage, name, status, startDate, endDate)
+        val response = CatalogPagedResponse(
+            result.content,
+            result.number,
+            result.size,
+            result.numberOfElements,
+            result.totalElements,
+            result.totalPages,
+        )
         return ResponseEntity.status(200).body(
-            CatalogResponseUtil.success(result, "success")
+            CatalogResponseUtil.success(response, "success")
         )
     }
 
@@ -50,7 +58,7 @@ class CatalogController(private val service: CatalogService) {
         )
     }
 
-    @PutMapping("/{uid}")
+    @PutMapping("/{uid}", consumes = [MediaType.APPLICATION_JSON_VALUE])
     fun update(
         @PathVariable uid: String,
         @Valid @RequestBody request: CatalogDTORequest
